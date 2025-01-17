@@ -1,0 +1,160 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Hybwris/Hybwris/blob/main/112-Final_Project\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "**The Codes I used for cleaning varibles: Gender, Job Satisfaction level and Remote Hours:**"
+      ],
+      "metadata": {
+        "id": "d8mAp-ANrh89"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#importing libraries\n",
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "\n",
+        "#file path of the csv file\n",
+        "file_path = r'Your file path of dirty csv file'\n",
+        "data = pd.read_csv(file_path, delimiter=\";\")\n",
+        "\n",
+        "#selecting columns for cleaning\n",
+        "columns_to_clean = ['Job Satis', 'GENder', 'Remote Days/Week']\n",
+        "data_cleaning_focus = data[columns_to_clean].copy()\n",
+        "\n",
+        "#cleaning the 'GENder' column\n",
+        "data_cleaning_focus['GENder'] = (\n",
+        "    data_cleaning_focus['GENder']\n",
+        "    .str.lower()  # Converting to lowercase\n",
+        "    .str.replace('!', '', regex=True)\n",
+        "    .str.replace('-', '', regex=True) # Removing ! and -\n",
+        "    .str.strip()  # Removing  whitespaces\n",
+        ")\n",
+        "\n",
+        "#replacing 'NA', 'na', and 'prefernottosay' values with 'prefer not to say'\n",
+        "data_cleaning_focus['GENder'].replace(\n",
+        "    {'na': 'prefer not to say', 'na ': 'prefer not to say', 'prefernottosay': 'prefer not to say'},\n",
+        "    inplace=True\n",
+        ")\n",
+        "\n",
+        "#replacing missing values in 'GENder'\n",
+        "data_cleaning_focus['GENder'].fillna('prefer not to say', inplace=True)\n",
+        "\n",
+        "#filling missing values in 'Job Satis' with its mean\n",
+        "data_cleaning_focus['Job Satis'].fillna(data_cleaning_focus['Job Satis'].mean(), inplace=True)\n",
+        "\n",
+        "#converting negative values to positive using absolute value\n",
+        "data_cleaning_focus['Remote Days/Week'] = data_cleaning_focus['Remote Days/Week'].apply(lambda x: abs(x))\n",
+        "\n",
+        "#filling missing values in 'Remote Days/Week' with its mean and convert to integers\n",
+        "data_cleaning_focus['Remote Days/Week'].fillna(data_cleaning_focus['Remote Days/Week'].mean(), inplace=True)\n",
+        "data_cleaning_focus['Remote Days/Week'] = data_cleaning_focus['Remote Days/Week'].round().astype(int)\n",
+        "\n",
+        "#function for rounding to 2 significant figures\n",
+        "def round_significant(x, sig=2):\n",
+        "    if x == 0:\n",
+        "        return 0\n",
+        "    else:\n",
+        "        return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)\n",
+        "\n",
+        "#'Job Satis' column has some values that have different significent figures, standardizing them to have to 2 significant figures\n",
+        "data_cleaning_focus['Job Satis'] = data_cleaning_focus['Job Satis'].apply(lambda x: round_significant(x, 2))\n",
+        "\n",
+        "#renaming the columns\n",
+        "data_cleaning_focus.rename(columns={\n",
+        "    'Job Satis': 'Job Satis',\n",
+        "    'GENder': 'Gender',\n",
+        "    'Remote Days/Week': 'Remote Days Per Week'\n",
+        "}, inplace=True)\n",
+        "\n",
+        "#saving the cleaned data to a new CSV file\n",
+        "cleaned_file_path = r'/desired folder for the cleaned csv file/cleaned_impact_of_remote_work_on_mental_health.csv'\n",
+        "data_cleaning_focus.to_csv(cleaned_file_path, index=False)\n",
+        "\n",
+        "#verifying the cleaned data\n",
+        "print(data_cleaning_focus.info())\n",
+        "print(data_cleaning_focus.head())\n",
+        "print(f'Cleaned data saved to: {cleaned_file_path}')\n"
+      ],
+      "metadata": {
+        "id": "0nv_cor3rxDo"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**The codes I used for my visualization**"
+      ],
+      "metadata": {
+        "id": "-NKzCJVHr-0F"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd\n",
+        "import seaborn as sns\n",
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "#loading the cleaned CSV file\n",
+        "cleaned_file_path = r'Path to the cleaned csv file'\n",
+        "data_cleaning_focus = pd.read_csv(cleaned_file_path)\n",
+        "\n",
+        "#cleaning column names\n",
+        "data_cleaning_focus.columns = data_cleaning_focus.columns.str.strip()\n",
+        "\n",
+        "#grouping the data by gender and remote days per week and calculating mean Job Satisfaction\n",
+        "grouped_data = data_cleaning_focus.groupby(['Gender', 'Remote Days Per Week'])['Job Satis'].mean().reset_index()\n",
+        "\n",
+        "#plotting the box plot\n",
+        "plt.figure(figsize=(12, 6))\n",
+        "sns.boxplot(data=data_cleaning_focus, x='Remote Days Per Week', y='Job Satis', hue='Gender')\n",
+        "\n",
+        "#adding title and labels\n",
+        "plt.title('Box Plot: Job Satisfaction Distribution by Remote Days and Gender', fontsize=14)\n",
+        "plt.xlabel('Remote Days Per Week', fontsize=12)\n",
+        "plt.ylabel('Job Satisfaction', fontsize=12)\n",
+        "\n",
+        "#adjusting legend size\n",
+        "plt.legend(title='Gender', fontsize=10)\n",
+        "\n",
+        "#visualization\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "0-7gt-l1sDix"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "colab": {
+      "name": "Colaboratory'ye Hoş Geldiniz",
+      "toc_visible": true,
+      "provenance": [],
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "display_name": "Python 3",
+      "name": "python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 0
+}
